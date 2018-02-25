@@ -1,4 +1,5 @@
-import { toUint8Array, concat } from './TypedArrayUtil.js';
+import { toUint8Array, concat } from './typed-array.js';
+import { createCanvas, createCanvasBlob, loadImage } from './graphics.js'
 import BitArray, { setBit, getBit } from './BitArray.js';
 
 const ALPHA_CH = 3;
@@ -74,15 +75,6 @@ const Steganography = {
 
 export default Steganography;
 
-function createCanvas(width, height) {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  canvas.width = width;
-  canvas.height = height;
-
-  return { canvas, context };
-}
-
 function parseHeader(data) {
   const HEADER_SIZE = 4;
   const MAX_SIZE = Math.floor(data.length * 3 / 32);  // x/4*3/8|0
@@ -104,19 +96,4 @@ function parseHeader(data) {
   }
 
   return len;
-}
-
-function createCanvasBlob(canvas) {
-  return new Promise(resolve => {
-    canvas.toBlob(blob => resolve(blob));
-  });
-}
-
-function loadImage(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = url;
-  });
 }

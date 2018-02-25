@@ -1,4 +1,4 @@
-import { toUint8Array } from './TypedArrayUtil.js';
+import { toUint8Array } from './typed-array.js';
 
 export default class BitArray {
   constructor(data) {
