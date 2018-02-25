@@ -18,17 +18,37 @@ window.addEventListener('load', async () => {
     clearElement(output);
     const stegOption = getStegOption();
     let result;
-    if(stegOption == 'encode') {
-      execStegEncode(message, img, output);
-    } else if(stegOption == 'decode') {
-      execStegDecode(img, output);
-    } else {
-      throw new Error(`Unknown stegOption '${stegOption}'`);
+
+    try {
+      if(stegOption == 'encode') {
+        execStegEncode(message, img, output);
+      } else if(stegOption == 'decode') {
+        execStegDecode(img, output);
+      } else {
+        throw new Error(`Unknown stegOption '${stegOption}'`);
+      }
+    } catch(error) {
+      displayAlert('danger', error.message);
     }
   });
 
   setupRadios(messageBox, output);
 });
+
+function displayAlert(type, message) {
+  const alert = document.createElement('div');
+  alert.classList.add('alert', `alert-${type}`, 'alert-dismissible');
+  const closeX = document.createElement('a');
+  closeX.setAttribute('href', '#');
+  closeX.setAttribute('data-dismiss', 'alert');
+  closeX.setAttribute('aria-label', 'close');
+  closeX.textContent = '\u00d7';
+  closeX.classList.add('close');
+  alert.appendChild(closeX);
+  alert.appendChild(document.createTextNode(message));
+
+  document.querySelector('.container').prepend(alert);
+}
 
 async function execStegEncode(message, img, output) {
   const result = await Steganography.encode(message, img);
