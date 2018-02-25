@@ -45,6 +45,7 @@ function createReadonlyTextarea(text) {
   const textarea = document.createElement('textarea');
   textarea.classList.add('form-control');
   textarea.setAttribute('readonly', true);
+  textarea.setAttribute('rows', 5);
   textarea.value = text;
 
   return textarea;
