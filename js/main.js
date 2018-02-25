@@ -6,7 +6,7 @@ window.addEventListener('load', async () => {
 
   const form = document.querySelector('form');
   const messageBox = document.getElementById('message');
-  const output = document.querySelector('output');
+  const output = document.getElementById('output');
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const message = messageBox.value;
@@ -52,6 +52,7 @@ function displayAlert(type, message) {
 
 async function execStegEncode(message, img, output) {
   const result = await Steganography.encode(message, img);
+  result.classList.add('img-thumbnail');
   output.appendChild(result);
 }
 
@@ -65,7 +66,7 @@ function createReadonlyTextarea(text) {
   const textarea = document.createElement('textarea');
   textarea.classList.add('form-control');
   textarea.setAttribute('readonly', true);
-  textarea.setAttribute('rows', 5);
+  textarea.setAttribute('rows', 10);
   textarea.value = text;
 
   return textarea;
