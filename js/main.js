@@ -1,5 +1,7 @@
-import Steganography from './Steganography.js';
+import Steganography, { EncodingError, DecodingError } from './Steganography.js';
 import { loadImage } from './graphics.js';
+
+// TODO: go over everything here
 
 window.addEventListener('load', async () => {
   console.log('Hello, nosy, ain\'t ya?');
@@ -20,14 +22,25 @@ window.addEventListener('load', async () => {
     let result;
 
     try {
-      if(stegOption == 'encode') {
-        execStegEncode(message, img, output);
-      } else if(stegOption == 'decode') {
-        execStegDecode(img, output);
-      } else {
-        throw new Error(`Unknown stegOption '${stegOption}'`);
+      const steg = new Steganography();
+
+      switch(stegOption) {
+        case 'encode':
+          execStegEncode(message, img, output);
+          break;
+
+        case 'decode':
+          execStegDecode(img, output);
+          break;
+
+        default:
+          throw new Error(`Unknown stegOption '${stegOption}'`);
       }
     } catch(error) {
+      if(!(error instanceof EncodingError || error instanceof DecodingError)) {
+        throw error;
+      }
+
       displayAlert('danger', error.message);
     }
   });
@@ -51,7 +64,8 @@ function displayAlert(type, message) {
 }
 
 async function execStegEncode(message, img, output) {
-  const result = await Steganography.encode(message, img);
+  const steg = new Steganography(1);
+  const result = await steg.encode(message, img);
   result.classList.add('img-thumbnail');
   output.appendChild(result);
 }

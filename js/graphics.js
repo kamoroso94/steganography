@@ -21,3 +21,18 @@ export function loadImage(url) {
     img.src = url;
   });
 }
+
+export function getImageData(image) {
+  const { width, height } = image;
+  const { canvas, context } = createCanvas(width, height);
+  context.drawImage(image, 0, 0);
+  return context.getImageData(0, 0, width, height);
+}
+
+export async function createImage(imageData) {
+  const { canvas, context } = createCanvas(imageData.width, imageData.height);
+  context.drawImage(imageData, 0, 0);
+  const blob = await createCanvasBlob(canvas);
+  const blobURL = window.URL.createObjectURL(blob);
+  return loadImage(blobURL);
+}
