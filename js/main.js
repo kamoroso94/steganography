@@ -1,83 +1,124 @@
-import Steganography, { EncodingError, DecodingError } from './Steganography.js';
+import Steganography from './Steganography.js';
+import SteganographyError from './SteganographyError.js';
 import { loadImage } from './graphics.js';
 
-// TODO: go over everything here
-
-window.addEventListener('load', async () => {
-  console.log('Hello, nosy, ain\'t ya?');
-
+window.addEventListener('load', () => {
   const form = document.querySelector('form');
-  const messageBox = document.getElementById('message');
-  const output = document.getElementById('output');
+  const messageElem = document.getElementById('message');
+  const sizeElem = document.getElementById('message-size');
+  const uploader = document.getElementById('uploader');
+
+  const clippy = new ClipboardJS('#copy-btn', {
+    target(trigger) {
+      const output = document.getElementById('output-result');
+      const target = output.firstElementChild;
+      console.log(target);
+      return target;
+    }
+  });
+  clippy.on('success', console.log);
+  clippy.on('error', console.error);
+
+  messageElem.addEventListener('input', () => {
+    const byteCount = new TextEncoder().encode(messageElem.value).length;
+    sizeElem.textContent = byteCount;
+
+    const sizeContainer = sizeElem.parentNode;
+    sizeContainer.classList.toggle('text-danger', byteCount == 0);
+    sizeContainer.classList.toggle('text-muted', byteCount != 0);
+  });
+
+  document.getElementById('save-btn').addEventListener('click', () => {
+    const output = document.getElementById('output-result');
+    const result = output.firstElementChild;
+    // TODO: finish
+  });
+
+  const stegActionElem = document.getElementById('steg-action');
+  stegActionElem.addEventListener('change', () => {
+    form.reset();
+
+    const isEncodeOpt = stegActionElem.value == 'encode';
+    messageElem.parentNode.classList.toggle('hidden', !isEncodeOpt);
+
+    const submitMsg = isEncodeOpt ? 'Encode' : 'Decode';
+    document.getElementById('submit-btn').textContent = submitMsg;
+
+    const copyBtn = document.getElementById('copy-btn');
+    copyBtn.classList.toggle('hidden', isEncodeOpt);
+
+    if(isEncodeOpt) {
+      messageElem.removeAttribute('disabled');
+    } else {
+      messageElem.setAttribute('disabled', true);
+    }
+  });
+
+  form.addEventListener('reset', (event) => {
+    event.preventDefault();
+
+    messageElem.value = '';
+    sizeElem.textContent = 0;
+    sizeElem.parentNode.classList.remove('text-muted');
+    sizeElem.parentNode.classList.add('text-danger');
+    uploader.value = null;
+    hideOutput();
+  });
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const message = messageBox.value;
-    if(!messageBox.disabled && message.length == 0) return;
+    const message = messageElem.value;
+    if(!messageElem.disabled && message.length == 0) return;
 
     const img = await getInputImage();
     if(!img) return;
 
-    clearElement(output);
-    const stegOption = getStegOption();
+    const stegAction = document.getElementById('steg-action').value;
     let result;
 
     try {
-      const steg = new Steganography();
-
-      switch(stegOption) {
-        case 'encode':
-          execStegEncode(message, img, output);
-          break;
-
-        case 'decode':
-          execStegDecode(img, output);
-          break;
-
-        default:
-          throw new Error(`Unknown stegOption '${stegOption}'`);
-      }
+      result = await perfromSteg(stegAction, message, img);
+      document.getElementById('result-buttons').classList.remove('hidden');
     } catch(error) {
-      if(!(error instanceof EncodingError || error instanceof DecodingError)) {
-        throw error;
-      }
-
-      displayAlert('danger', error.message);
+      if(!(error instanceof SteganographyError)) throw error;
+      result = createAlert('danger', error.message);
+      console.log(error);
     }
-  });
 
-  setupRadios(messageBox, output);
+    const isError = result.classList.contains('alert');
+    const resultButtons = document.getElementById('result-buttons');
+    resultButtons.classList.toggle('hidden', isError);
+    showOutput(result);
+  });
 });
 
-function displayAlert(type, message) {
+async function perfromSteg(action, message, img) {
+  if(action == 'encode') return await encodeMessage(message, img);
+  if(action == 'decode') return decodeMessage(img);
+  throw new Error(`Unknown stegOption '${stegOption}'`);
+}
+
+function createAlert(type, message) {
   const alert = document.createElement('div');
   alert.classList.add('alert', `alert-${type}`, 'alert-dismissible');
-  const closeX = document.createElement('a');
-  closeX.setAttribute('href', '#');
-  closeX.setAttribute('data-dismiss', 'alert');
-  closeX.setAttribute('aria-label', 'close');
-  closeX.textContent = '\u00d7';
-  closeX.classList.add('close');
-  alert.appendChild(closeX);
-  alert.appendChild(document.createTextNode(message));
-
-  document.querySelector('.container').prepend(alert);
+  alert.append(message);
+  return alert;
 }
 
-async function execStegEncode(message, img, output) {
-  const steg = new Steganography(1);
-  const result = await steg.encode(message, img);
-  result.classList.add('img-thumbnail');
-  output.appendChild(result);
+async function encodeMessage(message, img) {
+  const encodedImg = await Steganography.encode(message, img);
+  encodedImg.classList.add('img-thumbnail');
+  return encodedImg;
 }
 
-function execStegDecode(img, output) {
-  const result = Steganography.decode(img);
-  const textarea = createReadonlyTextarea(result);
-  output.appendChild(textarea);
+function decodeMessage(img) {
+  const message = Steganography.decode(img);
+  return createReadonlyTextarea(message);
 }
 
 function createReadonlyTextarea(text) {
   const textarea = document.createElement('textarea');
+
   textarea.classList.add('form-control');
   textarea.setAttribute('readonly', true);
   textarea.setAttribute('rows', 10);
@@ -86,41 +127,42 @@ function createReadonlyTextarea(text) {
   return textarea;
 }
 
-function getStegOption() {
-  const stegOpts = document.getElementsByName('steg-option');
-  return [...stegOpts].find(stegOpt => stegOpt.checked).value;
-}
-
 function getInputImage() {
   const uploader = document.getElementById('uploader');
-  const imgFile = uploader.files[0];
+  const [ imgFile ] = uploader.files;
   if(!imgFile) return null;
   const url = window.URL.createObjectURL(imgFile);
   return loadImage(url);
 }
 
-function setupRadios(messageBox, output) {
-  const stegOpts = document.getElementsByName('steg-option');
+function saveText(text) {
 
-  for(const stegOpt of stegOpts) {
-    stegOpt.addEventListener('change', () => {
-      if(!stegOpt.checked) return;
-      clearElement(output);
-
-      const isDecodeOpt = stegOpt.value == 'decode';
-      messageBox.parentNode.classList.toggle('hidden', isDecodeOpt);
-
-      if(isDecodeOpt) {
-        messageBox.setAttribute('disabled', true);
-      } else {
-        messageBox.removeAttribute('disabled');
-      }
-    });
-  }
 }
 
-function clearElement(elem) {
-  while(elem.firstChild) {
-    elem.removeChild(elem.firstChild);
+function saveImage() {
+
+}
+
+function showOutput(elem) {
+  const container = document.getElementById('output-container');
+  const output = container.querySelector('output');
+  clearOutput();
+  container.classList.remove('hidden');
+  output.append(elem);
+}
+
+function hideOutput() {
+  const container = document.getElementById('output-container');
+  container.classList.add('hidden');
+  clearOutput();
+}
+
+function clearOutput() {
+  const container = document.getElementById('output-container');
+  const output = container.querySelector('output');
+  container.classList.add('hidden');
+
+  while(output.firstChild) {
+    output.firstChild.remove();
   }
 }

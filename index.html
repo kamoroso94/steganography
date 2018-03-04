@@ -19,23 +19,21 @@
   <body>
     <div class="container">
       <h1>Steganography</h1>
-      <p>Encode and decode steganograms from text and PNG files.</p>
+      <p class="lead">Encode and decode steganograms from text and PNG files.</p>
 
       <form>
         <div class="form-group">
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="steg-option" id="steg-option-1" value="encode" checked />
-            <label class="form-check-label" for="steg-option-1">Encode message</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="steg-option" id="steg-option-2" value="decode" />
-            <label class="form-check-label" for="steg-option-2">Decode photo</label>
-          </div>
+          <label for="steg-action">Steganography action</label>
+          <select class="custom-select" id="steg-action">
+            <option value="encode" selected>Encode message</option>
+            <option value="decode">Decode photo</option>
+          </select>
         </div>
 
         <div class="form-group">
           <label for="message">Secret message</label>
           <textarea class="form-control" id="message" rows="10" required></textarea>
+          <small class="form-text text-danger"><span id="message-size">0</span> bytes</small>
         </div>
 
         <div class="form-group">
@@ -44,10 +42,18 @@
         </div>
 
         <div class="form-group">
-          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="submit" class="btn btn-primary" id="submit-btn">Encode</button>
+          <button type="reset" class="btn btn-default">Reset</button>
         </div>
 
-        <div class="form-group" id="output"></div>
+        <div class="hidden" id="output-container">
+          <h3 id="output-title">Result</h3>
+          <output class="form-group" id="output-result"></output>
+          <div class="form-group" id="result-buttons">
+            <button class="btn btn-primary" id="save-btn">Save</button>
+            <button class="btn btn-default hidden" id="copy-btn">Copy</button>
+          </div>
+        </div>
       </form>
 
       <footer>
@@ -64,5 +70,6 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
       integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
       crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
   </body>
 </html>

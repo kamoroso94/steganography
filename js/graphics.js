@@ -31,7 +31,7 @@ export function getImageData(image) {
 
 export async function createImage(imageData) {
   const { canvas, context } = createCanvas(imageData.width, imageData.height);
-  context.drawImage(imageData, 0, 0);
+  context.putImageData(imageData, 0, 0);
   const blob = await createCanvasBlob(canvas);
   const blobURL = window.URL.createObjectURL(blob);
   return loadImage(blobURL);
