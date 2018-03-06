@@ -5,62 +5,60 @@ import { loadImage } from './graphics.js';
 window.addEventListener('load', () => {
   const form = document.querySelector('form');
   const messageElem = document.getElementById('message');
-  const sizeElem = document.getElementById('message-size');
   const uploader = document.getElementById('uploader');
 
-  const clippy = new ClipboardJS('#copy-btn', {
-    target(trigger) {
-      const output = document.getElementById('output-result');
-      const target = output.firstElementChild;
-      console.log(target);
-      return target;
-    }
-  });
-  clippy.on('success', console.log);
-  clippy.on('error', console.error);
-
-  messageElem.addEventListener('input', () => {
-    const byteCount = new TextEncoder().encode(messageElem.value).length;
-    sizeElem.textContent = byteCount;
-
-    const sizeContainer = sizeElem.parentNode;
-    sizeContainer.classList.toggle('text-danger', byteCount == 0);
-    sizeContainer.classList.toggle('text-muted', byteCount != 0);
-  });
-
-  document.getElementById('save-btn').addEventListener('click', () => {
-    const output = document.getElementById('output-result');
-    const result = output.firstElementChild;
-    // TODO: finish
-  });
-
-  const stegActionElem = document.getElementById('steg-action');
-  stegActionElem.addEventListener('change', () => {
+  document.getElementById('steg-action').addEventListener('change', () => {
     form.reset();
 
-    const isEncodeOpt = stegActionElem.value == 'encode';
-    messageElem.parentNode.classList.toggle('hidden', !isEncodeOpt);
+    const isEncodeAction = getStegAction() == 'encode';
+    messageElem.parentNode.classList.toggle('hidden', !isEncodeAction);
 
-    const submitMsg = isEncodeOpt ? 'Encode' : 'Decode';
+    const submitMsg = isEncodeAction ? 'Encode' : 'Decode';
     document.getElementById('submit-btn').textContent = submitMsg;
 
     const copyBtn = document.getElementById('copy-btn');
-    copyBtn.classList.toggle('hidden', isEncodeOpt);
+    copyBtn.classList.toggle('hidden', isEncodeAction);
 
-    if(isEncodeOpt) {
+    if(isEncodeAction) {
       messageElem.removeAttribute('disabled');
+      copyBtn.setAttribute('disabled', true);
     } else {
       messageElem.setAttribute('disabled', true);
+      copyBtn.removeAttribute('disabled');
     }
+  });
+
+  document.getElementById('save-btn').addEventListener('click', () => {
+    const output = document.getElementById('result-output');
+    const result = output.querySelector('img,textarea');
+    if(!result) return;
+
+    const resultTag = result.tagName.toLowerCase();
+
+    if(resultTag == 'img') {
+      const url = result.src;
+      download(url, 'secret.png');
+    } else {
+      const blob = new Blob([result.value]);
+      const url = window.URL.createObjectURL(blob);
+      download(url, 'secret.txt');
+      window.URL.revokeObjectURL(url);
+    }
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    const output = document.getElementById('result-output');
+    const target = output.querySelector('textarea');
+    if(!target) return;
+    target.select();
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
   });
 
   form.addEventListener('reset', (event) => {
     event.preventDefault();
 
     messageElem.value = '';
-    sizeElem.textContent = 0;
-    sizeElem.parentNode.classList.remove('text-muted');
-    sizeElem.parentNode.classList.add('text-danger');
     uploader.value = null;
     hideOutput();
   });
@@ -96,6 +94,10 @@ async function perfromSteg(action, message, img) {
   if(action == 'encode') return await encodeMessage(message, img);
   if(action == 'decode') return decodeMessage(img);
   throw new Error(`Unknown stegOption '${stegOption}'`);
+}
+
+function getStegAction() {
+  return document.getElementById('steg-action').value;
 }
 
 function createAlert(type, message) {
@@ -135,16 +137,16 @@ function getInputImage() {
   return loadImage(url);
 }
 
-function saveText(text) {
-
-}
-
-function saveImage() {
-
+function download(url, fileName='download') {
+  const aTag = document.createElement('a');
+  aTag.href = url;
+  aTag.download = fileName;
+  aTag.classList.add('hidden');
+  aTag.click();
 }
 
 function showOutput(elem) {
-  const container = document.getElementById('output-container');
+  const container = document.getElementById('result-container');
   const output = container.querySelector('output');
   clearOutput();
   container.classList.remove('hidden');
@@ -152,15 +154,20 @@ function showOutput(elem) {
 }
 
 function hideOutput() {
-  const container = document.getElementById('output-container');
+  const container = document.getElementById('result-container');
   container.classList.add('hidden');
   clearOutput();
 }
 
 function clearOutput() {
-  const container = document.getElementById('output-container');
+  const container = document.getElementById('result-container');
   const output = container.querySelector('output');
   container.classList.add('hidden');
+
+  const img = output.querySelector('img');
+  if(img) {
+    window.URL.revokeObjectURL(img.src);
+  }
 
   while(output.firstChild) {
     output.firstChild.remove();
